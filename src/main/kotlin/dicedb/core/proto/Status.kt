@@ -9,5 +9,5 @@ import kotlinx.serialization.protobuf.ProtoNumber
 @Serializable
 enum class Status {
     @ProtoNumber(0) OK,
-    @ProtoNumber(1) ERR
+    @ProtoNumber(1) ERR,
 }

@@ -3,21 +3,21 @@ package dicedb.example.leaderboard
 import dicedb.client.Client
 import dicedb.core.domain.Command
 import dicedb.core.proto.Response
+import kotlin.random.Random
+import kotlin.random.nextInt
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.random.Random
-import kotlin.random.nextInt
-import kotlin.time.Duration.Companion.milliseconds
 
 class LeaderboardService(
     private val launchUpdate: Boolean = false,
-    private val updateTimeout: Long = 500
-){
+    private val updateTimeout: Long = 500,
+) {
     private val client: Client = Client("localhost", 7379)
-    
+
     init {
         GlobalScope.launch {
             if (launchUpdate) {
@@ -25,10 +25,9 @@ class LeaderboardService(
             }
         }
     }
-    
-    private suspend fun launchUpdate() =
-        coroutineScope {
-            async {
+
+    private suspend fun launchUpdate() = coroutineScope {
+        async {
                 delay(updateTimeout)
                 if (launchUpdate) {
                     while (true) {
@@ -38,18 +37,16 @@ class LeaderboardService(
                         delay(updateTimeout.milliseconds)
                     }
                 }
-            }.await()
-        }
-    
-    private suspend fun updateScore(player: String, score: Int) =
-        client.fire(Command.ZAdd("game:scores", score, player))
-    
-    suspend fun subscribe(command: Command<*>, onUpdate: (Response.ZRANGERes) -> Unit) {
-        client.watchFlow(command)
-            .collect { msg ->
-                msg.zrangeRes?.let {
-                    onUpdate(it)
-                } ?: println("Ignored non-ZRANGE response: $msg")
             }
+            .await()
+    }
+
+    private suspend fun updateScore(player: String, score: Int) =
+        client.fire(Command.ZAdd("game:scores", listOf(score to player)))
+
+    suspend fun subscribe(command: Command<*>, onUpdate: (Response.ZRANGERes) -> Unit) {
+        client.watchFlow(command).collect { msg ->
+            msg.zrangeRes?.let { onUpdate(it) } ?: println("Ignored non-ZRANGE response: $msg")
+        }
     }
 }

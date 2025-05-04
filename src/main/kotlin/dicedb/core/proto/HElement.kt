@@ -7,7 +7,4 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
-data class HElement(
-    @ProtoNumber(1) val key: String,
-    @ProtoNumber(2) val value: String
-)
+data class HElement(@ProtoNumber(1) val key: String, @ProtoNumber(2) val value: String)

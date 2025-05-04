@@ -3,9 +3,9 @@
 package dicedb.core.proto
 
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import kotlinx.serialization.SerialName
 
 @Serializable
 sealed class Response {
@@ -126,47 +126,25 @@ sealed class Response {
     @SerialName("KEYSRes")
     data class KEYSRes(@ProtoNumber(1) val keys: List<String>) : Response()
 
-    @Serializable
-    @SerialName("HGETALLWATCHRes")
-    data object HGETALLWATCHRes : Response()
+    @Serializable @SerialName("HGETALLWATCHRes") data object HGETALLWATCHRes : Response()
 
-    @Serializable
-    @SerialName("HGETWATCHRes")
-    data object HGETWATCHRes : Response()
+    @Serializable @SerialName("HGETWATCHRes") data object HGETWATCHRes : Response()
 
-    @Serializable
-    @SerialName("GETWATCHRes")
-    data object GETWATCHRes : Response()
+    @Serializable @SerialName("GETWATCHRes") data object GETWATCHRes : Response()
 
-    @Serializable
-    @SerialName("UNWATCHRes")
-    data object UNWATCHRes : Response()
+    @Serializable @SerialName("UNWATCHRes") data object UNWATCHRes : Response()
 
-    @Serializable
-    @SerialName("HANDSHAKERes")
-    data object HANDSHAKERes : Response()
+    @Serializable @SerialName("HANDSHAKERes") data object HANDSHAKERes : Response()
 
-    @Serializable
-    @SerialName("SETRes")
-    data object SETRes : Response()
+    @Serializable @SerialName("SETRes") data object SETRes : Response()
 
-    @Serializable
-    @SerialName("FLUSHDBRes")
-    data object FLUSHDBRes : Response()
+    @Serializable @SerialName("FLUSHDBRes") data object FLUSHDBRes : Response()
 
-    @Serializable
-    @SerialName("ZRANGEWATCHRes")
-    data object ZRANGEWATCHRes : Response()
+    @Serializable @SerialName("ZRANGEWATCHRes") data object ZRANGEWATCHRes : Response()
 
-    @Serializable
-    @SerialName("ZCOUNTWATCHRes")
-    data object ZCOUNTWATCHRes : Response()
+    @Serializable @SerialName("ZCOUNTWATCHRes") data object ZCOUNTWATCHRes : Response()
 
-    @Serializable
-    @SerialName("ZCARDWATCHRes")
-    data object ZCARDWATCHRes : Response()
+    @Serializable @SerialName("ZCARDWATCHRes") data object ZCARDWATCHRes : Response()
 
-    @Serializable
-    @SerialName("ZRANKWATCHRes")
-    data object ZRANKWATCHRes : Response()
+    @Serializable @SerialName("ZRANKWATCHRes") data object ZRANKWATCHRes : Response()
 }

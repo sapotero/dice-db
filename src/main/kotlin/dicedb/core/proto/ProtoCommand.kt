@@ -9,7 +9,4 @@ import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 @SerialName("Command")
-data class ProtoCommand(
-    @ProtoNumber(1) val cmd: String?,
-    @ProtoNumber(2) val args: List<String>
-)
+data class ProtoCommand(@ProtoNumber(1) val cmd: String?, @ProtoNumber(2) val args: List<String>)

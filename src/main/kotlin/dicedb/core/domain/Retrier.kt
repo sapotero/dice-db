@@ -1,9 +1,9 @@
 package dicedb.core.domain
 
-import kotlinx.coroutines.delay
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
+import kotlinx.coroutines.delay
 
 class Retrier(
     private val maxRetries: Int = 3,
@@ -12,12 +12,12 @@ class Retrier(
 ) {
     suspend fun <T> runWithRetry(
         onFailure: ((Throwable) -> Unit)? = null,
-        block: suspend () -> T
+        block: suspend () -> T,
     ): T {
         val timeSource = TimeSource.Monotonic
         var attempt = 0
         var lastError: Throwable? = null
-        
+
         while (attempt < maxRetries) {
             try {
                 return block()
@@ -29,7 +29,7 @@ class Retrier(
                 attempt++
             }
         }
-        
+
         throw lastError ?: IllegalStateException("Retrier failed without throwing an exception")
     }
 }

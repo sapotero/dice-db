@@ -2,20 +2,20 @@
 
 package dicedb.core.proto
 
+import dicedb.core.proto.Response.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import dicedb.core.proto.Response.*
 
 @Serializable
 data class Result(
     @ProtoNumber(1) val status: Status?,
     @ProtoNumber(2) val message: String,
     @ProtoNumber(3) val fingerprint64: ULong?,
-    
+
     // need to use flatten list instead of
     // @ProtoNumber(11) val response: Response
-    
+
     @ProtoNumber(11) val typeRes: TYPERes? = null,
     @ProtoNumber(12) val pingRes: PINGRes? = null,
     @ProtoNumber(13) val echoRes: ECHORes? = null,
@@ -55,5 +55,5 @@ data class Result(
     @ProtoNumber(47) val zrangeWatchRes: ZRANGEWATCHRes? = null,
     @ProtoNumber(48) val zcountWatchRes: ZCOUNTWATCHRes? = null,
     @ProtoNumber(49) val zcardWatchRes: ZCARDWATCHRes? = null,
-    @ProtoNumber(50) val zrankWatchRes: ZRANKWATCHRes? = null
+    @ProtoNumber(50) val zrankWatchRes: ZRANKWATCHRes? = null,
 )
