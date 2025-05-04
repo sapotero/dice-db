@@ -14,6 +14,8 @@ sealed class Command<R : Response> {
         XX,
         CH,
         INCR,
+        LT,
+        GT,
     }
 
     enum class SetFlag {
@@ -35,6 +37,11 @@ sealed class Command<R : Response> {
 
     abstract fun toProto(): ProtoCommand
 
+    data class Raw(val command: String, val args: List<String> = listOf()) :
+        Command<Response.ECHORes>() {
+        override fun toProto() = ProtoCommand(command, args)
+    }
+
     data class Get(val key: String) : Command<Response.GETRes>() {
         override fun toProto() = ProtoCommand("GET", listOf(key))
     }
@@ -53,26 +60,34 @@ sealed class Command<R : Response> {
             ProtoCommand("DECRBY", listOf(key, decrement.toString()))
     }
 
-    data class Del(val keys: List<String>) : Command<Response.DELRes>() {
-        override fun toProto(): ProtoCommand = ProtoCommand("DEL", keys)
+    class Del(vararg val keys: String) : Command<Response.DELRes>() {
+        override fun toProto(): ProtoCommand = ProtoCommand("DEL", keys.toList())
     }
 
     data class Echo(val message: String) : Command<Response.ECHORes>() {
         override fun toProto(): ProtoCommand = ProtoCommand("ECHO", listOf(message))
     }
 
-    data class Exists(val keys: List<String>) : Command<Response.EXISTSRes>() {
-        override fun toProto(): ProtoCommand = ProtoCommand("EXISTS", keys)
+    class Exists(vararg val keys: String) : Command<Response.EXISTSRes>() {
+        override fun toProto(): ProtoCommand = ProtoCommand("EXISTS", keys.toList() ?: listOf())
     }
 
-    data class Expire(val key: String, val seconds: Long) : Command<Response.EXPIRERes>() {
+    data class Expire(val key: String, val seconds: Long, val expireType: SetFlag? = null) :
+        Command<Response.EXPIRERes>() {
         override fun toProto(): ProtoCommand =
-            ProtoCommand("EXPIRE", listOf(key, seconds.toString()))
+            ProtoCommand(
+                "EXPIRE",
+                mutableListOf(key, seconds.toString()).apply { expireType?.let { add(it.name) } },
+            )
     }
 
-    data class ExpireAt(val key: String, val timestamp: Long) : Command<Response.EXPIREATRes>() {
+    data class ExpireAt(val key: String, val timestamp: Long, val expireType: SetFlag? = null) :
+        Command<Response.EXPIREATRes>() {
         override fun toProto(): ProtoCommand =
-            ProtoCommand("EXPIREAT", listOf(key, timestamp.toString()))
+            ProtoCommand(
+                "EXPIREAT",
+                mutableListOf(key, timestamp.toString()).apply { expireType?.let { add(it.name) } },
+            )
     }
 
     data class ExpireTime(val key: String) : Command<Response.EXPIRETIMERes>() {
@@ -87,8 +102,12 @@ sealed class Command<R : Response> {
         override fun toProto(): ProtoCommand = ProtoCommand("GETDEL", listOf(key))
     }
 
-    data class GetEx(val key: String, val expireType: ExpireType? = null, val time: Long? = null) :
-        Command<Response.GETEXRes>() {
+    data class GetEx(
+        val key: String,
+        val expireType: ExpireType? = null,
+        val time: Long? = null,
+        val persist: Boolean? = null,
+    ) : Command<Response.GETEXRes>() {
         override fun toProto(): ProtoCommand =
             ProtoCommand(
                 "GETEX",
@@ -97,6 +116,7 @@ sealed class Command<R : Response> {
                         add(expireType.name)
                         add(time.toString())
                     }
+                    persist?.let { add("PERSIST") }
                 },
             )
     }
@@ -121,12 +141,12 @@ sealed class Command<R : Response> {
         override fun toProto() = ProtoCommand("HGETALL.WATCH", listOf(key))
     }
 
-    data class HGetWatch(val key: String, val field: String) : Command<Response.HGETWATCHRes>() {
+    data class HGetWatch(val key: String, val field: String) : Command<Response.HGETRes>() {
         override fun toProto(): ProtoCommand = ProtoCommand("HGET.WATCH", listOf(key, field))
     }
 
     data class HSet(val key: String, val fields: List<String>) : Command<Response.HSETRes>() {
-        override fun toProto(): ProtoCommand = ProtoCommand("HSET", fields)
+        override fun toProto(): ProtoCommand = ProtoCommand("HSET", listOf(key) + fields)
     }
 
     data class Incr(val key: String) : Command<Response.INCRRes>() {
@@ -150,9 +170,9 @@ sealed class Command<R : Response> {
     data class Set(
         val key: String,
         val value: String,
-        val flag: SetFlag? = null,
         val expireType: ExpireType? = null,
         val expireTime: Long? = null,
+        val flag: SetFlag? = null,
         val keepTtl: Boolean = false,
     ) : Command<Response.SETRes>() {
         override fun toProto() =
@@ -207,9 +227,9 @@ sealed class Command<R : Response> {
         override fun toProto(): ProtoCommand = ProtoCommand("ZCARD.WATCH", listOf(key))
     }
 
-    data class ZCount(val key: String, val min: String, val max: String) :
-        Command<Response.ZCARDRes>() {
-        override fun toProto(): ProtoCommand = ProtoCommand("ZCOUNT", listOf(key, min, max))
+    data class ZCount(val key: String, val min: Int, val max: Int) : Command<Response.ZCOUNTRes>() {
+        override fun toProto(): ProtoCommand =
+            ProtoCommand("ZCOUNT", listOf(key, min.toString(), max.toString()))
     }
 
     data class ZCountWatch(val key: String, val min: String, val max: String) :
@@ -221,7 +241,7 @@ sealed class Command<R : Response> {
         override fun toProto(): ProtoCommand =
             ProtoCommand(
                 "ZPOPMAX",
-                mutableListOf<String>().apply { if (count != null) add(count.toString()) },
+                mutableListOf(key).apply { if (count != null) add(count.toString()) },
             )
     }
 
@@ -229,7 +249,7 @@ sealed class Command<R : Response> {
         override fun toProto(): ProtoCommand =
             ProtoCommand(
                 "ZPOPMIN",
-                mutableListOf<String>().apply { if (count != null) add(count.toString()) },
+                mutableListOf(key).apply { if (count != null) add(count.toString()) },
             )
     }
 
@@ -252,7 +272,7 @@ sealed class Command<R : Response> {
         val start: Int,
         val stop: Int,
         val mode: ZRangeMode = ZRangeMode.BY_RANK,
-    ) : Command<Response.ZRANGEWATCHRes>() {
+    ) : Command<Response.ZRANGERes>() {
         override fun toProto(): ProtoCommand {
             val args = mutableListOf(key, start.toString(), stop.toString())
             if (mode == ZRangeMode.BY_SCORE) args.add(mode.value)

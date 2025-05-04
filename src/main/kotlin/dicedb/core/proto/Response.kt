@@ -24,11 +24,11 @@ sealed class Response {
 
     @Serializable
     @SerialName("EXISTSRes")
-    data class EXISTSRes(@ProtoNumber(1) val count: Long) : Response()
+    data class EXISTSRes(@ProtoNumber(1) val count: Long = 0) : Response()
 
     @Serializable
     @SerialName("HGETRes")
-    data class HGETRes(@ProtoNumber(1) val value: String) : Response()
+    data class HGETRes(@ProtoNumber(1) val value: String = "") : Response()
 
     @Serializable
     @SerialName("HSETRes")
@@ -40,15 +40,15 @@ sealed class Response {
 
     @Serializable
     @SerialName("TTLRes")
-    data class TTLRes(@ProtoNumber(1) val seconds: Long) : Response()
+    data class TTLRes(@ProtoNumber(1) val seconds: Long? = -2) : Response()
 
     @Serializable
     @SerialName("EXPIRERes")
-    data class EXPIRERes(@ProtoNumber(1) val isChanged: Boolean) : Response()
+    data class EXPIRERes(@ProtoNumber(1) val isChanged: Boolean = false) : Response()
 
     @Serializable
     @SerialName("EXPIREATRes")
-    data class EXPIREATRes(@ProtoNumber(1) val isChanged: Boolean) : Response()
+    data class EXPIREATRes(@ProtoNumber(1) val isChanged: Boolean = false) : Response()
 
     @Serializable
     @SerialName("EXPIRETIMERes")
@@ -56,19 +56,19 @@ sealed class Response {
 
     @Serializable
     @SerialName("GETRes")
-    data class GETRes(@ProtoNumber(1) val value: String) : Response()
+    data class GETRes(@ProtoNumber(1) val value: String = "") : Response()
 
     @Serializable
     @SerialName("GETDELRes")
-    data class GETDELRes(@ProtoNumber(1) val value: String) : Response()
+    data class GETDELRes(@ProtoNumber(1) val value: String? = null) : Response()
 
     @Serializable
     @SerialName("GETEXRes")
-    data class GETEXRes(@ProtoNumber(1) val value: String) : Response()
+    data class GETEXRes(@ProtoNumber(1) val value: String? = null) : Response()
 
     @Serializable
     @SerialName("GETSETRes")
-    data class GETSETRes(@ProtoNumber(1) val value: String) : Response()
+    data class GETSETRes(@ProtoNumber(1) val value: String = "") : Response()
 
     @Serializable
     @SerialName("INCRRes")
@@ -76,19 +76,19 @@ sealed class Response {
 
     @Serializable
     @SerialName("DECRRes")
-    data class DECRRes(@ProtoNumber(1) val value: Long) : Response()
+    data class DECRRes(@ProtoNumber(1) val value: Long = 0) : Response()
 
     @Serializable
     @SerialName("INCRBYRes")
-    data class INCRBYRes(@ProtoNumber(1) val value: Long) : Response()
+    data class INCRBYRes(@ProtoNumber(1) val value: Long = 0) : Response()
 
     @Serializable
     @SerialName("DECRBYRes")
-    data class DECRBYRes(@ProtoNumber(1) val value: Long) : Response()
+    data class DECRBYRes(@ProtoNumber(1) val value: Long = 0) : Response()
 
     @Serializable
     @SerialName("DELRes")
-    data class DELRes(@ProtoNumber(1) val count: Long) : Response()
+    data class DELRes(@ProtoNumber(1) val count: Long = 0) : Response()
 
     @Serializable
     @SerialName("ZADDRes")
@@ -96,19 +96,19 @@ sealed class Response {
 
     @Serializable
     @SerialName("ZCOUNTRes")
-    data class ZCOUNTRes(@ProtoNumber(1) val count: Long) : Response()
+    data class ZCOUNTRes(@ProtoNumber(1) val count: Long = 0) : Response()
 
     @Serializable
     @SerialName("ZREMRes")
-    data class ZREMRes(@ProtoNumber(1) val count: Long) : Response()
+    data class ZREMRes(@ProtoNumber(1) val count: Long = 0) : Response()
 
     @Serializable
     @SerialName("ZCARDRes")
-    data class ZCARDRes(@ProtoNumber(1) val count: Long) : Response()
+    data class ZCARDRes(@ProtoNumber(1) val count: Long = 0) : Response()
 
     @Serializable
     @SerialName("ZRANKRes")
-    data class ZRANKRes(@ProtoNumber(2) val element: ZElement) : Response()
+    data class ZRANKRes(@ProtoNumber(2) val element: ZElement = ZElement(0, "", 0)) : Response()
 
     @Serializable
     @SerialName("ZRANGERes")
@@ -116,11 +116,11 @@ sealed class Response {
 
     @Serializable
     @SerialName("ZPOPMAXRes")
-    data class ZPOPMAXRes(@ProtoNumber(1) val elements: List<ZElement>) : Response()
+    data class ZPOPMAXRes(@ProtoNumber(1) val elements: List<ZElement> = emptyList()) : Response()
 
     @Serializable
     @SerialName("ZPOPMINRes")
-    data class ZPOPMINRes(@ProtoNumber(1) val elements: List<ZElement>) : Response()
+    data class ZPOPMINRes(@ProtoNumber(1) val elements: List<ZElement> = emptyList()) : Response()
 
     @Serializable
     @SerialName("KEYSRes")

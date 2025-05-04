@@ -16,7 +16,7 @@ class LeaderboardService(
     private val launchUpdate: Boolean = false,
     private val updateTimeout: Long = 500,
 ) {
-    private val client: Client = Client("localhost", 7379)
+    val client: Client = Client("localhost", 7379)
 
     init {
         GlobalScope.launch {
@@ -44,9 +44,8 @@ class LeaderboardService(
     private suspend fun updateScore(player: String, score: Int) =
         client.fire(Command.ZAdd("game:scores", listOf(score to player)))
 
-    suspend fun subscribe(command: Command<*>, onUpdate: (Response.ZRANGERes) -> Unit) {
-        client.watchFlow(command).collect { msg ->
-            msg.zrangeRes?.let { onUpdate(it) } ?: println("Ignored non-ZRANGE response: $msg")
-        }
-    }
+    suspend inline fun <reified R : Response> subscribe(
+        command: Command<R>,
+        crossinline onUpdate: (R) -> Unit,
+    ) = client.watchFlow(command).collect { msg -> onUpdate(msg) }
 }
