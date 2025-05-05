@@ -1,6 +1,6 @@
-package dicedb.example.leaderboard
+package leaderboard
 
-import dicedb.client.Client
+import dicedb.client.DiceDBClient
 import dicedb.core.domain.Command
 import dicedb.core.proto.Response
 import kotlin.random.Random
@@ -16,7 +16,7 @@ class LeaderboardService(
     private val launchUpdate: Boolean = false,
     private val updateTimeout: Long = 500,
 ) {
-    val client: Client = Client("localhost", 7379)
+    val client: DiceDBClient = DiceDBClient("localhost", 7379)
 
     init {
         GlobalScope.launch {

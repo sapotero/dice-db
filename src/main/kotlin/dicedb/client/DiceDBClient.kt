@@ -17,40 +17,59 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class Client(
+/**
+ * A client for interacting with a DiceDB server. Provides functionality to execute standard
+ * commands and establish watch flows for real-time responses. The client handles connection
+ * management, retries, and proper resource cleanup.
+ *
+ * @property host The hostname or IP address of the DiceDB server
+ * @property port The port number to connect to on the DiceDB server
+ * @property config Configuration for the client including retry policies and message sizes
+ * @property id Unique identifier for this client instance (generated automatically)
+ *
+ * Features:
+ * - Support for both standard commands and watch flows
+ * - Automatic retry mechanism for failed operations
+ * - Customizable via [ClientConfig]
+ * - Proper resource management through [Closeable] implementation
+ */
+class DiceDBClient(
     host: String,
     port: Int,
     config: ClientConfig = ClientConfig(),
     private val id: String = UUID.randomUUID().toString(),
 ) : Closeable {
-    val mainWire: ProtobufTCPWire = ProtobufTCPWire(config.maxMsgSize, Socket(host, port))
+    val mainWire: ProtobufTCPWire = ProtobufTCPWire(config.maxMessageSize, Socket(host, port))
 
     val retrier: Retrier =
         Retrier(
-            maxRetries = config.maxRetries,
+            maxAttempts = config.maxAttempts,
             retryDelay = config.retryDelay,
-            retryOn = { it is WireError && it.kind == WireError.Kind.TERMINATED },
+            shouldRetry = { it is WireError && it.kind == WireError.Kind.TERMINATED },
         )
 
-    var watchWire: ProtobufTCPWire = ProtobufTCPWire(config.maxMsgSize, Socket(host, port))
+    var watchWire: ProtobufTCPWire = ProtobufTCPWire(config.maxMessageSize, Socket(host, port))
 
     val mutex = Mutex()
 
     init {
         runBlocking { fire(Command.Handshake(id)) }
     }
-    
+
     /**
-    * Fires a command and processes the response, handling retries and error cases.
-    *
-    * @param command The command to execute, which specifies the request and the expected response type.
-    * @return The response of type [R], which is the result of executing the command.
-    * @throws IllegalStateException If the command execution fails or the response cannot be mapped to type [R].
-    * @throws WireError If there is an error in communication, such as a corrupted message or connection issues.
-    */
+     * Fires a command and processes the response, handling retries and error cases.
+     *
+     * @param command The command to execute, which specifies the request and the expected response
+     *   type.
+     * @return The response of type [R], which is the result of executing the command.
+     * @throws IllegalStateException If the command execution fails or the response cannot be mapped
+     *   to type [R].
+     * @throws WireError If there is an error in communication, such as a corrupted message or
+     *   connection issues.
+     */
     suspend inline fun <reified R : Response> fire(command: Command<R>): R =
         mutex.withLock {
-            retrier.runWithRetry {
+            retrier.run {
                 mainWire.send(command.toProto())?.let { throw it }
                 val (result, err) = mainWire.receive<Result>()
 
@@ -58,19 +77,21 @@ class Client(
                     throw err ?: IllegalStateException("Command failed: ${result?.message}")
                 }
 
-                return@runWithRetry mapResponse<R>(result)
+                mapResponse<R>(result)
             }
         }
-    
+
     /**
-    * Establishes a watch flow for the given command, processing incoming messages and emitting responses
-    * until an error occurs or the flow completes.
-    *
-    * @param command The command to be sent to initiate the watch flow.
-    * @return A Flow that emits instances of R, which are responses corresponding to the watch command.
-    * @throws WireError If there is an error sending the command or receiving responses. Specifically,
-    * throws a WireError of kind CORRUPT_MESSAGE if there is an issue decoding the response.
-    */
+     * Establishes a watch flow for the given command, processing incoming messages and emitting
+     * responses until an error occurs or the flow completes.
+     *
+     * @param command The command to be sent to initiate the watch flow.
+     * @return A Flow that emits instances of R, which are responses corresponding to the watch
+     *   command.
+     * @throws WireError If there is an error sending the command or receiving responses.
+     *   Specifically, throws a WireError of kind CORRUPT_MESSAGE if there is an issue decoding the
+     *   response.
+     */
     suspend inline fun <reified R : Response> watchFlow(command: Command<R>): Flow<R> =
         flow {
                 watchWire.send(command.toProto())?.let { throw it }
@@ -85,19 +106,20 @@ class Client(
                 }
             }
             .onCompletion { watchWire.close() }
-    
+
     /**
-    * Maps a [Result] object to a specific response type based on the reified type parameter [R].
-    * This function ensures type safety by leveraging Kotlin's reified types, allowing for precise mapping
-    * of the response data to the expected type.
-    *
-    * @param result The [Result] object containing the response data to be mapped.
-    *
-    * @return An instance of the response type [R] containing the mapped data from the provided [result].
-    *
-    * @throws IllegalStateException If the response type [R] does not match any known response type.
-    * @throws KotlinError If the response type [R] does not match the expected type, indicating a fatal error.
-    */
+     * Maps a [Result] object to a specific response type based on the reified type parameter [R].
+     * This function ensures type safety by leveraging Kotlin's reified types, allowing for precise
+     * mapping of the response data to the expected type.
+     *
+     * @param result The [Result] object containing the response data to be mapped.
+     * @return An instance of the response type [R] containing the mapped data from the provided
+     *   [result].
+     * @throws IllegalStateException If the response type [R] does not match any known response
+     *   type.
+     * @throws KotlinError If the response type [R] does not match the expected type, indicating a
+     *   fatal error.
+     */
     inline fun <reified R : Response> mapResponse(result: Result): R {
         return when (R::class) {
             Response.TYPERes::class -> result.typeRes

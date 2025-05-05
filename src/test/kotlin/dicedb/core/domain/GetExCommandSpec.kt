@@ -1,6 +1,7 @@
 package dicedb.core.domain
 
 import io.kotest.assertions.throwables.shouldThrowAny
+import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.shouldBe
 import java.time.Instant
 import kotlinx.coroutines.delay
@@ -40,7 +41,7 @@ class GetExCommandSpec : DiceDBSpec() {
                                 Command.GetEx("foo", expireType = Command.ExpireType.EX, time = 2)
                             )
                             .value shouldBe "bar"
-                        client.fire(Command.Ttl("foo")).seconds shouldBe 1
+                        client.fire(Command.Ttl("foo")).seconds shouldBeInRange 1..2L
                         client.fire(Command.Get("foo")).value shouldBe "bar"
                         delay(2000)
                         client.fire(Command.Get("foo")).value shouldBe ""

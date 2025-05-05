@@ -10,21 +10,8 @@ import kotlinx.coroutines.sync.withLock
 
 private const val PREFIX_SIZE = 4
 
-enum class Status {
-    OPEN,
-    CLOSED,
-}
-
-class WireError(val kind: Kind, override val cause: Throwable? = null) : Exception(cause) {
-    enum class Kind {
-        TERMINATED,
-        CORRUPT_MESSAGE,
-        EMPTY,
-    }
-}
-
 class TCPWire(private val maxMsgSize: Int, private val socket: Socket) : Wire {
-    private val status = AtomicReference(Status.OPEN)
+    private val status = AtomicReference(WireStatus.OPEN)
     private val readMutex = Mutex()
     private val writeMutex = Mutex()
     private val input = BufferedInputStream(socket.getInputStream())
@@ -32,7 +19,7 @@ class TCPWire(private val maxMsgSize: Int, private val socket: Socket) : Wire {
 
     override suspend fun send(data: ByteArray): WireError? =
         writeMutex.withLock {
-            if (status.get() == Status.CLOSED) {
+            if (status.get() == WireStatus.CLOSED) {
                 return WireError(
                     Kind.TERMINATED,
                     IllegalStateException("trying to use closed wire"),
@@ -75,7 +62,7 @@ class TCPWire(private val maxMsgSize: Int, private val socket: Socket) : Wire {
         }
 
     override fun close() {
-        if (status.compareAndSet(Status.OPEN, Status.CLOSED)) {
+        if (status.compareAndSet(WireStatus.OPEN, WireStatus.CLOSED)) {
             try {
                 socket.close()
             } catch (e: IOException) {
@@ -152,7 +139,7 @@ class TCPWire(private val maxMsgSize: Int, private val socket: Socket) : Wire {
             }
         }
 
-        status.set(Status.CLOSED)
+        status.set(WireStatus.CLOSED)
         return buffer to WireError(Kind.TERMINATED, lastErr)
     }
 
@@ -172,13 +159,13 @@ class TCPWire(private val maxMsgSize: Int, private val socket: Socket) : Wire {
                 totalWritten = buffer.size
             } catch (e: IOException) {
                 if (e.message?.contains("closed") == true) {
-                    status.set(Status.CLOSED)
+                    status.set(WireStatus.CLOSED)
                     return WireError(Kind.TERMINATED, e)
                 }
 
                 if (e is SocketTimeoutException || e.message?.contains("temporary") == true) {
                     if (backoffRetries++ >= maxBackoffRetries) {
-                        status.set(Status.CLOSED)
+                        status.set(WireStatus.CLOSED)
                         return WireError(Kind.TERMINATED, IOException("max backoff retries", e))
                     }
                     Thread.sleep(delay)
@@ -187,7 +174,7 @@ class TCPWire(private val maxMsgSize: Int, private val socket: Socket) : Wire {
                 }
 
                 if (++partialWriteRetries > maxPartialWriteRetries) {
-                    status.set(Status.CLOSED)
+                    status.set(WireStatus.CLOSED)
                     return WireError(Kind.TERMINATED, IOException("max partial write retries", e))
                 }
 

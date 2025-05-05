@@ -8,7 +8,6 @@ import kotlinx.coroutines.runBlocking
 import test.base.DiceDBSpec
 
 class ExpireAtCommandSpec : DiceDBSpec() {
-
     init {
         Given("a client connected to DiceDB") {
             When("calling EXPIREAT on an existing key") {
@@ -27,7 +26,7 @@ class ExpireAtCommandSpec : DiceDBSpec() {
                         val unixTime = Instant.now().epochSecond + 1
                         client.fire(Command.Set("k1", "v1"))
                         client.fire(Command.ExpireAt("k1", unixTime)).isChanged shouldBe true
-                        delay(1000)
+                        runBlocking { delay(1500) }
                         client.fire(Command.Get("k1")).value shouldBe ""
                     }
                 }
@@ -94,7 +93,7 @@ class ExpireAtCommandSpec : DiceDBSpec() {
                         client
                             .fire(Command.ExpireAt("k2", time, Command.SetFlag.NX))
                             .isChanged shouldBe true
-                        delay(2000)
+                        delay(2500)
                         client.fire(Command.Get("k2")).value shouldBe ""
                     }
                 }

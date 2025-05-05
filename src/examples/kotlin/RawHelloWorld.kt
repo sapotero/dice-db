@@ -1,5 +1,3 @@
-package dicedb.example
-
 import dicedb.core.proto.ProtoCommand
 import dicedb.core.service.ProtobufTCPWire
 import java.net.Socket

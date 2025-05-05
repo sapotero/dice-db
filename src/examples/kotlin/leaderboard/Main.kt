@@ -1,4 +1,4 @@
-package dicedb.example.leaderboard
+package leaderboard
 
 import dicedb.core.domain.Command
 import dicedb.core.proto.Response

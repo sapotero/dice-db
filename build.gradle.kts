@@ -2,11 +2,12 @@ plugins {
     kotlin("jvm") version "2.1.10"
     kotlin("plugin.serialization") version "2.1.10"
     id("com.diffplug.spotless") version "7.0.3"
+    id("maven-publish")
 }
 
 group = "dicedb-kotlin"
 
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories { mavenCentral() }
 
@@ -29,6 +30,12 @@ tasks.test { useJUnitPlatform() }
 
 kotlin { jvmToolchain(21) }
 
+sourceSets { create("examples") }
+
+kotlin {
+    target.compilations.getByName("examples").associateWith(target.compilations.getByName("main"))
+}
+
 spotless {
     kotlin {
         targetExclude("build/**")
@@ -43,5 +50,14 @@ spotless {
         target("*.gradle", "*.md", ".gitignore")
         trimTrailingWhitespace()
         endWithNewline()
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("jitpack") {
+            from(components["java"])
+            artifactId = "client"
+        }
     }
 }

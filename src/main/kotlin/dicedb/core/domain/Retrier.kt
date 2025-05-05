@@ -1,35 +1,49 @@
 package dicedb.core.domain
 
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.TimeSource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 
+/**
+ * Utility for retrying a suspending [block] with delay and retry condition.
+ *
+ * @param maxAttempts Maximum number of attempts (must be ≥ 1).
+ * @param retryDelay Delay between retries. Default is 500 milliseconds.
+ * @param shouldRetry Predicate to determine if retry should occur on given [Throwable].
+ */
 class Retrier(
-    private val maxRetries: Int = 3,
-    private val retryDelay: Duration = 500.milliseconds,
-    private val retryOn: (Throwable) -> Boolean = { true },
+    private val maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
+    private val retryDelay: Duration = DEFAULT_RETRY_DELAY,
+    private val shouldRetry: (Throwable) -> Boolean = { true },
 ) {
-    suspend fun <T> runWithRetry(
-        onFailure: ((Throwable) -> Unit)? = null,
-        block: suspend () -> T,
-    ): T {
-        val timeSource = TimeSource.Monotonic
-        var attempt = 0
-        var lastError: Throwable? = null
+    companion object {
+        private const val DEFAULT_MAX_ATTEMPTS = 3
+        private val DEFAULT_RETRY_DELAY = 500.milliseconds
+    }
 
-        while (attempt < maxRetries) {
+    /**
+     * Runs [block] and retries on failure based on [shouldRetry], up to [maxAttempts].
+     *
+     * @param onFailure Callback invoked on each failure before retrying, with the exception and
+     *   attempt index.
+     * @return The successful result of [block], or throws the last error if all attempts fail.
+     */
+    suspend fun <T> run(block: suspend () -> T): T {
+        require(maxAttempts > 0) { "maxAttempts must be ≥ 1" }
+
+        for (attempt in 0..maxAttempts) {
             try {
                 return block()
             } catch (e: Throwable) {
-                if (!retryOn(e)) throw e
-                lastError = e
-                onFailure?.invoke(e)
+                if (e is CancellationException) throw e
+                if (!shouldRetry(e) || attempt == maxAttempts - 1) throw e
                 delay(retryDelay)
-                attempt++
+                yield()
             }
         }
 
-        throw lastError ?: IllegalStateException("Retrier failed without throwing an exception")
+        error("Unreachable: loop must either return or throw")
     }
 }
