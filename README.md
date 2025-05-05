@@ -45,7 +45,7 @@ Replace `<version>` with a tag, commit hash, or `master-SNAPSHOT`.
 
 ```kotlin
 suspend fun main() {
-    val client = Client("localhost", 7379)
+    val client = DiceDBClient("localhost", 7379)
 
     with(client) {
         val setResp: Response.SETRes = fire(Command.Set("k1", "v1"))
